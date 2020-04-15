@@ -1,0 +1,23 @@
+{
+  "name": "query2excel",
+  "version": "1.0.2",
+  "description": "",
+  "main": "dist/query2xlsx.js",
+  "types": "dist/query2xlsx.d.ts",
+  "scripts": {
+    "prepare": "npm run build",
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/mysql": "^2.15.9",
+    "typescript": "^3.8.3"
+  },
+  "dependencies": {
+    "exceljs": "3.8.1",
+    "mysql": "^2.18.1"
+  }
+}
