@@ -1,6 +1,6 @@
 {
   "name": "query2excel",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "",
   "main": "dist/query2xlsx.js",
   "types": "dist/query2xlsx.d.ts",
