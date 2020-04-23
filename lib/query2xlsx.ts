@@ -94,71 +94,82 @@ export class query2xlsx implements config {
             right: b
         };
     }
-    write():Promise<any> {
+    write(): Promise<any> {
         let p: Promise<any>;
-        p = new Promise((resolve, reject)=>{
+        p = new Promise((resolve, reject) => {
             this.connection.connect((error) => {
                 if (error) throw error;
                 this.connection.query(this.query, (err, result: Array<any>, fields) => {
                     if (err) {
                         console.log(err);
                     }
-                    console.log(result[10]);
-                    console.log(fields);
                     //Create workbook
-                    var wb = new Excel.Workbook();
+                    var wb = new Excel.stream.xlsx.WorkbookWriter({
+                        filename: this.outFileName,
+                        useStyles: true,
+                        useSharedStrings: true
+                    });
                     var ws = wb.addWorksheet("Query Result");
 
                     var output: Array<Array<any>> = [];
+                    var numOfColumns = 0;
                     if (fields !== undefined) {
+                        var row = ws.getRow(1);
 
                         fields.forEach((f: FieldInfo, index: number) => {
                             var result = f.name.replace(/([A-Z])/g, " $1");
-                            var cell = ws.getRow(1).getCell(index + 1);
+                            var cell = row.getCell(index + 1);
                             var finalResult = result.charAt(0).toUpperCase() + result.slice(1);
                             cell.value = finalResult.trim();
                             this.ColumnsWidths.push(finalResult.trim().length * 1.5);
+                            numOfColumns++;
+                        });
+                        
+                        row.eachCell((cell: Excel.Cell, colNumber: number)=>{
                             cell.fill = this.getHeaderFillColor();
                             cell.font = this.getHeaderFontColor();
-                            cell.border = this.getCellBorders();
-                        });
+                        })
+
+                        ws.columns = fields.map((field, colWidthIndex) => {
+                            return {
+                                header: field.name,
+                                key: field.name,
+                                width: this.ColumnsWidths[colWidthIndex]
+                            }
+                        })
+                        row.commit();
                     }
+                    var TotalRows = 0;
                     result.forEach((element, index1) => {
-                        Object.keys(element).forEach((key, index2: number) => {
-                            var cell = ws.getRow(index1 + 2).getCell(index2 + 1);
-                            cell.value = element[key];
+                        var row = ws.addRow(element);
+                        row.eachCell((cell)=>{
+                            cell.fill = this.getRowFillColor();
                             cell.font = this.getRowFontColor();
                             cell.border = this.getCellBorders();
-                            if (index1 % 2) {
-                                cell.fill = this.getRowFillColor();
-                            } else {
-                                cell.fill = this.getRowFillColor();
-                            }
-                        });
+                        })
+                        row.commit();
+                        TotalRows++;
                     });
-                    if (ws.lastRow !== undefined) {
-                        ws.autoFilter = {
-                            from: {
-                                row: 1,
-                                column: 1
-                            },
-                            to: {
-                                row: ws.lastRow.number,
-                                column: ws.columnCount
-                            }
+                    console.log(numOfColumns);
+                    ws.autoFilter = {
+                        from: {
+                            row: 1,
+                            column: 1
+                        },
+                        to: {
+                            row: TotalRows,
+                            column: numOfColumns
                         }
                     }
 
-                    ws.views = [
-                        { state: 'frozen', ySplit: 1 }
-                    ];
-                    ws.columns = this.ColumnsWidths.map((cw) => {
-                        return {
-                            width: cw
-                        }
+                    // ws.views = [
+                    //      { state: 'frozen', ySplit: 1 }
+                    // ];
+                    ws.commit();
+                    wb.commit().then(() => {
+                        resolve();
                     })
-                    wb.xlsx.writeFile(this.outFileName);
-                    resolve(true);
+
                 });
             })
 
